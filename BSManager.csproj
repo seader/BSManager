@@ -19,18 +19,22 @@
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DefineConstants>TRACE</DefineConstants>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <DefineConstants>TRACE</DefineConstants>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Profiler|AnyCPU'">
     <DefineConstants>TRACE</DefineConstants>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Profiler|x64'">
     <DefineConstants>TRACE</DefineConstants>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -119,12 +123,20 @@
 
   <PropertyGroup>
     <PublishReadyToRun>true</PublishReadyToRun>
-    <Version>2.4.1</Version>
+    <Version>2.5</Version>
     <Copyright>ManniX</Copyright>
-    <Description>VR Base Stations Manager for Pimax and Vive Pro HeadSets</Description>
+    <Description>VR Base Stations Manager for Pimax Crystal</Description>
     <PackageProjectUrl>https://github.com/mann1x/BSManager</PackageProjectUrl>
     <RepositoryUrl>https://github.com/mann1x/BSManager</RepositoryUrl>
     <RepositoryType>GitHub</RepositoryType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>

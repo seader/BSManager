@@ -109,7 +109,7 @@ namespace BSManager
 
         private string[] kill_list = new string[] { };
         private string[] graceful_list = new string[] { "vrmonitor", "vrdashboard", "ReviveOverlay", "vrmonitor" };
-        private string[] cleanup_pilist = new string[] { "pi_server", "piservice", "pitool" };
+        private string[] cleanup_pilist = new string[] { "pi_server", "piservice", "pimaxclient" };
 
         private static bool debugLog = false;
         private static bool ManageRuntime = false;
@@ -231,20 +231,27 @@ namespace BSManager
 
                 using (RegistryKey registryStart = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true))
                 {
-                    string _curpath = registryStart.GetValue("BSManager").ToString();
-                    if (_curpath == null)
+                    if (registryStart.GetValue("BSManager") != null)
                     {
-                        toolStripRunAtStartup.Checked = false;
+                        string _curpath = registryStart.GetValue("BSManager").ToString();
+                        if (_curpath == null)
+                        {
+                            toolStripRunAtStartup.Checked = false;
+                        }
+                        else
+                        {
+                            if (_curpath != MyExecutableWithPath) registryStart.SetValue("BSManager", MyExecutableWithPath);
+                            toolStripRunAtStartup.Checked = true;
+                        }
                     }
                     else
                     {
-                        if (_curpath != MyExecutableWithPath) registryStart.SetValue("BSManager", MyExecutableWithPath);
-                        toolStripRunAtStartup.Checked = true;
+                        registryStart.SetValue("BSManager", "");
                     }
                 }
 
-                string [] _glist = null;
-                string [] _klist = null;
+                string[] _glist = null;
+                string[] _klist = null;
 
                 _glist = ProcListLoad(fnGraceList, "graceful");
                 _klist = ProcListLoad(fnKillList, "immediate");
@@ -261,7 +268,7 @@ namespace BSManager
                 }
                 else
                 {
-                    slhfound = Load_LH_DB("SteamVR" );
+                    slhfound = Load_LH_DB("SteamVR");
                     if (!slhfound) { SteamVR_DB_ToolStripMenuItem.Text = "SteamVR DB file parse error"; }
                     else
                     {
@@ -346,7 +353,8 @@ namespace BSManager
 
         private void HandleEx(Exception ex)
         {
-            try {
+            try
+            {
                 string _msg = ex.Message;
                 if (ex.Source != string.Empty && ex.Source != null) _msg = $"{_msg} Source: {ex.Source}";
                 new ToastContentBuilder()
@@ -370,7 +378,8 @@ namespace BSManager
         public static void LogLine(string msg)
         {
             Trace.WriteLine($"{msg}");
-            if (debugLog) {
+            if (debugLog)
+            {
                 traceDbg.WriteLine($"[{DateTime.Now}] {msg}");
                 traceDbg.Flush();
             }
@@ -402,7 +411,7 @@ namespace BSManager
 
         private void timerManageRuntime()
         {
-            Task.Delay(TimeSpan.FromMilliseconds(15000))
+            Task.Delay(TimeSpan.FromMilliseconds(2500))
                 .ContinueWith(task => doManageRuntime());
         }
 
@@ -538,8 +547,10 @@ namespace BSManager
                 }
 
 
-                if (ManageRuntime) {
-                    if (!HeadSetState && LastManage) {
+                if (ManageRuntime)
+                {
+                    if (!HeadSetState && LastManage)
+                    {
 
 #if DEBUG
                         
@@ -575,15 +586,15 @@ namespace BSManager
                     }
                     else if (HeadSetState && !LastManage)
                     {
-                        Process[] PiToolArray = Process.GetProcessesByName("Pitool");
-                        LogLine($"[Manage Runtime] Found {PiToolArray.Count()} PiTool running");
+                        Process[] PimaxClientArray = Process.GetProcessesByName("PimaxClient");
+                        LogLine($"[Manage Runtime] Found {PimaxClientArray.Count()} PimaxClient running");
 
-                        if (PiToolArray.Count() == 0)
+                        if (PimaxClientArray.Count() == 0)
                         {
-                            ProcessStartInfo startInfo = new ProcessStartInfo(RuntimePath + "\\Pitool.exe", "hide");
+                            ProcessStartInfo startInfo = new ProcessStartInfo("C:\\Program Files\\Pimax\\PimaxClient\\pimaxui\\PimaxClient.exe", "hide");
                             startInfo.WindowStyle = ProcessWindowStyle.Minimized;
-                            Process PiTool = Process.Start(startInfo);
-                            LogLine($"[Manage Runtime] Started PiTool ({RuntimePath + "\\Pitool.exe"}) with PID={PiTool.Id}");
+                            Process PimaxClient = Process.Start(startInfo);
+                            LogLine($"[Manage Runtime] Started PimaxClient ({"C:\\Program Files\\Pimax\\PimaxClient\\pimaxui\\PimaxClient.exe"}) with PID={PimaxClient.Id}");
                         }
 
                         LastManage = true;
@@ -633,6 +644,7 @@ namespace BSManager
 
                 if (did.Contains("VID_0483&PID_0101")) _hmd = "PIMAX HMD";
                 if (did.Contains("VID_2996&PID_0309")) _hmd = "VIVE PRO HMD";
+                if (did.Contains("VID_34A4&PID_0012")) _hmd = "Crystal HMD";
 
                 if (_hmd.Length > 0)
                 {
@@ -641,7 +653,7 @@ namespace BSManager
                     ChangeHMDStrip($" {_hmd} {action} ", true);
                     this.notifyIcon1.Icon = BSManagerRes.bsmanager_on;
                     HeadSetState = true;
-                    Task.Delay(TimeSpan.FromMilliseconds(5000))
+                    Task.Delay(TimeSpan.FromMilliseconds(500))
                         .ContinueWith(task => checkLHState(lh => !lh.PoweredOn, true));
                     LogLine($"[HMD] Runtime {action}: ManageRuntime is {ManageRuntime}");
                     timerManageRuntime();
@@ -655,7 +667,8 @@ namespace BSManager
 
         private void checkLHState(Func<Lighthouse, bool> lighthousePredicate, bool hs_state)
         {
-            if (HeadSetState == hs_state) {
+            if (HeadSetState == hs_state)
+            {
                 var results = _lighthouses.Where(lighthousePredicate);
                 if (results.Any())
                 {
@@ -677,6 +690,7 @@ namespace BSManager
 
                 if (did.Contains("VID_0483&PID_0101")) _hmd = "PIMAX HMD";
                 if (did.Contains("VID_2996&PID_0309")) _hmd = "VIVE PRO HMD";
+                if (did.Contains("VID_34A4&PID_0012")) _hmd = "Crystal HMD";
 
                 if (_hmd.Length > 0)
                 {
@@ -685,7 +699,7 @@ namespace BSManager
                     ChangeHMDStrip($" {_hmd} {action} ", false);
                     this.notifyIcon1.Icon = BSManagerRes.bsmanager_off;
                     HeadSetState = false;
-                    Task.Delay(TimeSpan.FromMilliseconds(5000))
+                    Task.Delay(TimeSpan.FromMilliseconds(500))
                         .ContinueWith(task => checkLHState(lh => lh.PoweredOn, false));
                     LogLine($"[HMD] Runtime {action}: ManageRuntime is {ManageRuntime}");
                     timerManageRuntime();
@@ -723,7 +737,8 @@ namespace BSManager
 
         private void DeviceRemovedEvent(object sender, EventArrivedEventArgs e)
         {
-            try {
+            try
+            {
                 ManagementBaseObject instance = (ManagementBaseObject)e.NewEvent["TargetInstance"];
                 foreach (var property in instance.Properties)
                 {
@@ -783,7 +798,7 @@ namespace BSManager
             {
                 bool _done = true;
 
-                if (V2BaseStationsVive  && LastCmdSent == LastCmd.SLEEP && !HeadSetState)
+                if (V2BaseStationsVive && LastCmdSent == LastCmd.SLEEP && !HeadSetState)
                 {
                     TimeSpan _delta = DateTime.Now - LastCmdStamp;
 
@@ -1065,7 +1080,8 @@ namespace BSManager
 
         private void AdvertisementWatcher_Received(BluetoothLEAdvertisementWatcher sender, BluetoothLEAdvertisementReceivedEventArgs args)
         {
-            try {
+            try
+            {
 
                 //Trace.WriteLine($"Advertisment: {args.Advertisement.LocalName}");
 
@@ -1094,7 +1110,8 @@ namespace BSManager
                     var valveData = args.Advertisement.GetManufacturerDataByCompanyId(0x055D);
                     var htcData = args.Advertisement.GetManufacturerDataByCompanyId(0x02ED);
 
-                    if (valveData.Count > 0) {
+                    if (valveData.Count > 0)
+                    {
 
                         existing.Manufacturer = BSManufacturer.VIVE;
 
@@ -1226,19 +1243,20 @@ namespace BSManager
                 string pgroup = "LHProcess";
                 
                 int _leftDone = 0;
-                foreach (Lighthouse lhDone in _lighthouses) {
+                foreach (Lighthouse lhDone in _lighthouses)
+                {
                     if (lhDone.ProcessDone) _leftDone++;
                 }
 
                 lh.OpsTotal++;
 
-                int _doneCount=_leftDone+1;
+                int _doneCount = _leftDone + 1;
 
                 var pcontent = new ToastContentBuilder()
                     .AddArgument("action", "viewConversation")
                     .AddArgument("conversationId", 9113)
-                    .AddText("Commandeering the Base Stations...")
-                    .AddAudio(null,null,true)
+                    .AddText("Processing Base Stations...")
+                    .AddAudio(null, null, true)
                     .AddVisualChild(new AdaptiveProgressBar()
                     {
                         Title = new BindableString("title"),
@@ -1284,7 +1302,7 @@ namespace BSManager
                     if (ShowProgressToast) ToastNotificationManagerCompat.CreateToastNotifier().Update(initdata, ptag, pgroup);
                 }
 
-                void updateProgress(double percentage, string _msg = "Commandeering")
+                void updateProgress(double percentage, string _msg = "Processing")
                 {
                     string _ptag = "LHProcess";
                     string _pgroup = "LHProcess";
@@ -1485,7 +1503,8 @@ namespace BSManager
 
         private void createDesktopShortcutToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            try {
+            try
+            {
                 object shDesktop = (object)"Desktop";
                 WshShell shell = new WshShell();
                 string shortcutAddress = (string)shell.SpecialFolders.Item(ref shDesktop) + @"\BSManager.lnk";
@@ -1606,7 +1625,7 @@ namespace BSManager
                 HandleEx(ex);
             }
 
-}
+        }
 
         private void toolStripDebugLog_Click(object sender, EventArgs e)
         {
@@ -1664,9 +1683,9 @@ namespace BSManager
                 {
                     if (!RuntimeToolStripMenuItem.Checked)
                     {
-                            ManageRuntime = true;
-                            registryManage.SetValue("ManageRuntime", "1");
-                            RuntimeToolStripMenuItem.Checked = true;
+                        ManageRuntime = true;
+                        registryManage.SetValue("ManageRuntime", "1");
+                        RuntimeToolStripMenuItem.Checked = true;
                     }
                     else
                     {
